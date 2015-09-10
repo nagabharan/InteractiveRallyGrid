@@ -20,6 +20,9 @@ Ext.define('CustomApp', {
 
     _loadIteration: function () {
     	this.iterbox = Ext.create('Rally.ui.combobox.IterationComboBox', {
+			fieldLabel: 'Select Iteration:',
+			labelAlign: 'right',
+			width: 300,
 			listeners: {
 				ready: function (combobox) {
 					//this._loadData();
@@ -39,6 +42,9 @@ Ext.define('CustomApp', {
     	this.sevbox = Ext.create('Rally.ui.combobox.FieldValueComboBox',{
     		model: 'Defect',
     		field: 'Severity',
+    		fieldLabel: 'Select Severity:',
+    		labelAlign: 'right',
+    		width: 300,
     		listeners: {
 				ready: function (combobox) {
 					this._loadPriority();
@@ -57,6 +63,9 @@ Ext.define('CustomApp', {
     	this.priobox = Ext.create('Rally.ui.combobox.FieldValueComboBox',{
     		model: 'Defect',
     		field: 'Priority',
+    		fieldLabel: 'Select Priority:',
+    		labelAlign: 'right',
+    		width: 300,
     		listeners: {
 				ready: function (combobox) {
 					this._loadData();
