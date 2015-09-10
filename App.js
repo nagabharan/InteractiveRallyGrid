@@ -2,125 +2,143 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
 
+    items: [
+    	{
+    		xtype: 'container',
+    		itemId: 'pulldown-container',
+    		layout: {
+		        type: 'hbox',
+		        align: 'stretch'
+		    }
+	    }
+    ],
+    defectStore: undefined,
+    defectGrid: undefined,
+
     launch: function() {
     	
     	console.log("Interactive Grid App");
     	
-    	this.pulldownContainer = Ext.create('Ext.container.Container',{
-    		id: 'pulldownContainer-id',
-    		layout: {
-		        type: 'hbox',
-		        align: 'stretch'
-		    },
-    	});
-
-    	this.add(this.pulldownContainer);
     	this._loadIteration();
     },
 
     _loadIteration: function () {
-    	this.iterbox = Ext.create('Rally.ui.combobox.IterationComboBox', {
+    	var me = this;
+    	var iterbox = {
+    		xtype: 'rallyiterationcombobox',
+    		itemId: 'iteration-combobox',
 			fieldLabel: 'Select Iteration:',
 			labelAlign: 'right',
 			width: 300,
 			listeners: {
-				ready: function (combobox) {
-					//this._loadData();
-					this._loadSeverity();
-				},
-				select: function(combobox, records) {
-					this._loadData();
-				},
-				scope: this
+				ready: me._onIterationReady,
+				select: me._loadData,
+				scope: me
 			}	    
-		});		
+		};		
 
-    	this.pulldownContainer.add(this.iterbox);
+    	//this.pulldownContainer.add(this.iterbox);
+    	this.down('#pulldown-container').add(iterbox);
+    },
+
+    _onIterationReady: function (combobox) {
+    	this._loadSeverity();
     },
 
     _loadSeverity: function() {
-    	this.sevbox = Ext.create('Rally.ui.combobox.FieldValueComboBox',{
+    	var me = this;
+    	var sevbox = {
+    		xtype: 'rallyfieldvaluecombobox',
+    		itemId: 'severity-combobox',
     		model: 'Defect',
     		field: 'Severity',
     		fieldLabel: 'Select Severity:',
     		labelAlign: 'right',
     		width: 300,
     		listeners: {
-				ready: function (combobox) {
-					this._loadPriority();
-				},
-				select: function(combobox, records) {
-					this._loadData();
-				},
-				scope: this
+				ready: me._onSeverityReady,
+				select: me._loadData,
+				scope: me
 			}
-    	});
+    	};
 
-    	this.pulldownContainer.add(this.sevbox);
+    	//this.pulldownContainer.add(this.sevbox);
+    	this.down('#pulldown-container').add(sevbox);
     },
 
+    _onSeverityReady: function (combobox) {
+		this._loadPriority();
+	},
 	_loadPriority: function() {
-    	this.priobox = Ext.create('Rally.ui.combobox.FieldValueComboBox',{
+		var me = this;
+    	var priobox = {
+    		xtype: 'rallyfieldvaluecombobox',
+    		itemId: 'priority-combobox',
     		model: 'Defect',
     		field: 'Priority',
     		fieldLabel: 'Select Priority:',
     		labelAlign: 'right',
     		width: 300,
     		listeners: {
-				ready: function (combobox) {
-					this._loadData();
-				},
-				select: function(combobox, records) {
-					this._loadData();
-				},
-				scope: this
+				ready: me._loadData,
+				select: me._loadData,
+				scope: me
 			}
-    	});
+    	};
 
-    	this.pulldownContainer.add(this.priobox);
+    	//this.pulldownContainer.add(this.priobox);
+    	this.down('#pulldown-container').add(priobox);
+    },
+
+    _getFilters: function(iterval,sevval,prioval) {
+    	var iterfilter = Ext.create('Rally.data.wsapi.Filter',{
+    	    property: 'Iteration',
+            operation: '=',
+            value: iterval
+        });
+
+    	var sevfilter = Ext.create('Rally.data.wsapi.Filter',{
+    	    property: 'Severity',
+            operation: '=',
+            value: sevval
+        });
+
+    	var priofilter = Ext.create('Rally.data.wsapi.Filter',{
+    	    property: 'Priority',
+            operation: '=',
+            value: prioval
+        });
+
+    	return iterfilter.and(sevfilter.or(priofilter));
     },
 
     _loadData: function() {
+    	var me = this;
+    	var itersel = this.down('#iteration-combobox').getRecord().get('_ref');
+    	var sevsel = this.down('#severity-combobox').getRecord().get('value');
+    	var priosel = this.down('#priority-combobox').getRecord().get('value');
 
-    	var itersel = this.iterbox.getRecord().get('_ref');
-    	var sevsel = this.sevbox.getRecord().get('value');
-    	var priosel = this.priobox.getRecord().get('value');
+    	var myfilters = me._getFilters(itersel,sevsel,priosel);
 
-    	var myfilter = [{
-            property: 'Iteration',
-            operation: '=',
-            value: itersel
-        },
-        {
-            property: 'Severity',
-            operation: '=',
-            value: sevsel
-        },
-        {
-            property: 'Priority',
-            operation: '=',
-            value: priosel
-        }];
+    	if (me.defectStore) {
 
-    	if (this.DefectStore) {
-
-    		this.DefectStore.setFilter(myfilter);
-    		this.DefectStore.load();
+    		me.defectStore.setFilter(myfilters);
+    		me.defectStore.load();
 
     	} else {
 
-    		this.DefectStore = Ext.create('Rally.data.wsapi.Store', {
+    		me.defectStore = Ext.create('Rally.data.wsapi.Store', {
 			    model: 'Defect',
 			    autoLoad: true,
-			    filters: myfilter,
+			    filters: myfilters,
 			    listeners: {
 			        load: function(store, data, success) {
 			            console.log("got data",store, data, success);
-		            	if(!this.myGrid) {
-		            		this._createGrid(store);
+		            	if(!me.defectGrid) {
+		            		me._createGrid(store);
 		            	}
 			        },
-			        scope: this
+			        scope: me
 			    },
 			    fetch: ['FormattedID', 'Name', 'ScheduleState', 'Severity', 'Priority', 'Iteration']
 			});
@@ -129,16 +147,16 @@ Ext.define('CustomApp', {
     },
 
     _createGrid: function(myStoryStore) {
-    	
-    	this.myGrid = Ext.create('Rally.ui.grid.Grid', {
+    	var me = this;
+    	me.defectGrid = Ext.create('Rally.ui.grid.Grid', {
 				store: myStoryStore,
 				columnCfgs: [
 					'FormattedID', 'Name', 'ScheduleState', 'Severity', 'Priority', 'Iteration'
 				]	
 			});
 
-    	console.log("my grid", this.myGrid);
+    	console.log("my grid", me.defectGrid);
 
-    	this.add(this.myGrid);
+    	me.add(me.defectGrid);
     }
 });
