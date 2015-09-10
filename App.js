@@ -87,20 +87,20 @@ Ext.define('CustomApp', {
     	var priosel = this.priobox.getRecord().get('value');
 
     	var myfilter = [{
-				            property: 'Iteration',
-				            operation: '=',
-				            value: itersel
-				        },
-				        {
-				            property: 'Severity',
-				            operation: '=',
-				            value: sevsel
-				        },
-				        {
-				            property: 'Priority',
-				            operation: '=',
-				            value: priosel
-				        }];
+            property: 'Iteration',
+            operation: '=',
+            value: itersel
+        },
+        {
+            property: 'Severity',
+            operation: '=',
+            value: sevsel
+        },
+        {
+            property: 'Priority',
+            operation: '=',
+            value: priosel
+        }];
 
     	if (this.DefectStore) {
 
